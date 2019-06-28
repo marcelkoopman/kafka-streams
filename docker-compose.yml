@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+
+  zookeeper-1:
+    image: zookeeper
+    ports:
+    - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zookeeper-2:2888:3888
+
+  zookeeper-2:
+    image: zookeeper
+    ports:
+    - 12181:2181
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zookeeper-1:2888:3888 server.2=0.0.0.0:2888:3888
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME : localhost
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP : INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS : INTERNAL_PLAINTEXT://kafka:9092,EXTERNAL_PLAINTEXT://127.0.0.1:9093
+      KAFKA_LISTENERS : INTERNAL_PLAINTEXT://0.0.0.0:9092,EXTERNAL_PLAINTEXT://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME : INTERNAL_PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_CREATE_TOPICS: "berichten:1:1,mutaties:1:1"
+      
+    ports:
+    - 9092:9092
+    - 9093:9093
+    depends_on:
+    - zookeeper-1
+    - zookeeper-2
+    networks:
+      default:
+        aliases:
+        - localhost
